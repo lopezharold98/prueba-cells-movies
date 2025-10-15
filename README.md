@@ -21,5 +21,5 @@ npm run build
 ## Notas de implementación
 - Data Manager: `movies-data-manager` es un componente sin UI que delega al `moviesStore` acciones sobre TMDB. El store emite eventos para notificar a componentes UI.
 - UI components: `movies-list` (lista + búsqueda en vivo) y `movie-detail`.
-- Routing: router minimal implementado en `app-root` (puede reemplazarse por el router oficial de Open Cells).
+
 - Tipado: todas las entidades principales (Movie, Genre) tipadas en TypeScript.
