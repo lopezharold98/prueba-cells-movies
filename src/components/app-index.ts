@@ -3,7 +3,7 @@ import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { ElementController } from '@open-cells/element-controller';
 import { routes } from '../router/routes.js';
-import { styles } from './app-index.css.js';
+import { styles } from './app-index.css.ts';
 
 startApp({
   routes,

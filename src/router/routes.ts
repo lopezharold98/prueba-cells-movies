@@ -1,4 +1,4 @@
-import { RouteDefinition } from '@open-cells/core/types'; 
+import { RouteDefinition } from '@open-cells/core/types';
 
 export const routes: RouteDefinition[] = [
   {
@@ -10,11 +10,11 @@ export const routes: RouteDefinition[] = [
     },
   },
   {
-    path: '/second',
-    name: 'second',
-    component: 'second-page',
+    path: '/detail/:id',
+    name: 'detail',
+    component: 'detail-page',
     action: async () => {
-      await import('../pages/second/second-page.js');
+      await import('../pages/detail/detail-page.js');
     },
-  }
+  },
 ];

@@ -1,65 +1,67 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { DataManager } from '@open-cells/data-manager';
+import { MoviesDataManager } from '../../data/movies-data-manager.js';
+import { TMDB_CONFIG } from '../../config/tmdb-config.js';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
   static styles = css`
-    :host {
-      display: block;
-      padding: 1rem;
-      font-family: 'Arial', sans-serif;
+    .movie-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
     }
-    h2 {
-      color: #0072bb;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      background: #f7f7f7;
-      margin: 0.5rem 0;
-      padding: 1rem;
+    .movie {
+      background: #fff;
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 0.5rem;
+      text-align: center;
+    }
+    .error {
+      text-align: center;
+      color: red;
+      margin-top: 2rem;
     }
   `;
 
-  // Estado reactivo
-  @state()
-  items: any[] = [];
+  private manager = new MoviesDataManager();
 
-  // DataManager para manejar peticiones
-  private dataManager = new DataManager();
+  @state() movies: any[] = [];
+  @state() error: string | null = null;
 
-  connectedCallback() {
+  async connectedCallback() {
     super.connectedCallback();
-    this.loadData();
-  }
-
-  async loadData() {
-    try {
-      // Puedes usar una API real o un mock local (ejemplo: ./mock-data.json)
-      const url = 'https://jsonplaceholder.typicode.com/posts?_limit=5';
-      const response = await this.dataManager.fetch(url);
-      const data = await response.json();
-      this.items = data;
-    } catch (error) {
-      console.error('Error loading data:', error);
-    }
+    await this.manager.loadMovies();
+    this.movies = this.manager.get('movies') ?? [];
+    this.error = this.manager.get('error');
   }
 
   render() {
+    if (this.error) {
+      return html`<p class="error">${this.error}</p>`;
+    }
+
+    if (!this.movies || this.movies.length === 0) {
+      return html`<p class="error">No movies found.</p>`;
+    }
+
     return html`
-      <section>
-        <h2>Movies / Items</h2>
-        <ul>
-          ${this.items.length > 0
-            ? this.items.map(item => html`<li><strong>${item.title}</strong></li>`)
-            : html`<p>Loading...</p>`}
-        </ul>
-      </section>
+      <div class="movie-grid">
+        ${this.movies.map(
+          (movie) => html`
+            <div class="movie">
+              <img
+                src="${TMDB_CONFIG.IMAGE_BASE}${movie.poster_path}"
+                alt="${movie.title}"
+                width="150"
+              />
+              <h4>${movie.title}</h4>
+              <p>${movie.release_date}</p>
+            </div>
+          `
+        )}
+      </div>
     `;
   }
 }

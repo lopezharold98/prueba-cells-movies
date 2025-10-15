@@ -1,27 +1,36 @@
-// src/components/data/movies-data-manager.ts
-import { moviesStore } from '../state/movies-store';
+// Fallback minimal DataManager when '@open-cells/core/data-manager' is not available.
+class DataManager {
+  private state = new Map<string, any>();
 
-class MoviesDataManager extends HTMLElement {
-  constructor() {
-    super();
-  }
-  //Validar que el elemento este en el DOM
-  connectedCallback() {
-    
-  }
-    //Metodo para que otros componentes puedan llamar a la funcion fetchPopular del store
-  async fetchPopular() {
-    await moviesStore.fetchPopular();
-  }
- 
-  //Metodo para que otros componentes puedan llamar a la funcion fetchDetail del store
-  async fetchDetail(id: number) {
-    await moviesStore.fetchMovieDetail(id);
+  protected set(key: string, value: any): void {
+    this.state.set(key, value);
   }
 
-  setFilter(q: string) {
-    moviesStore.setFilter(q);
+  protected get<T = any>(key: string): T | undefined {
+    return this.state.get(key) as T | undefined;
   }
 }
 
-customElements.define('movies-data-manager', MoviesDataManager);
+import { TMDB_CONFIG } from '../config/tmdb-config.js';
+
+export class MoviesDataManager extends DataManager {
+  async loadMovies() {
+    try {
+      const response = await fetch(
+        `${TMDB_CONFIG.BASE_URL}/movie/popular?api_key=${TMDB_CONFIG.API_KEY}&language=en-US&page=1`
+      );
+
+      if (!response.ok) {
+        throw new Error('Error fetching movies');
+      }
+
+      const data = await response.json();
+      this.set('movies', data.results || []);
+      this.set('error', null);
+    } catch (error) {
+      console.error('MoviesDataManager → loadMovies() failed:', error);
+      this.set('movies', []);
+      this.set('error', 'Unable to load movies.');
+    }
+  }
+}
