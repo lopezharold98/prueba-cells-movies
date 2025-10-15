@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { getRouterParams } from '@open-cells/core/router';
+import { getCurrentRoute } from '@open-cells/core';
 import { TMDB_CONFIG } from '../../config/tmdb-config.js';
 
 @customElement('detail-page')
@@ -47,17 +47,24 @@ export class DetailPage extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
-    const params = getRouterParams();
-    const id = params.id;
+
+    // ✅ Obtener el id desde la ruta actual
+    const route = getCurrentRoute();
+    const id = route?.params?.id;
+
+    if (!id) {
+      console.error('No se encontró el ID en la ruta');
+      return;
+    }
 
     try {
       const response = await fetch(
         `${TMDB_CONFIG.BASE_URL}/movie/${id}?api_key=${TMDB_CONFIG.API_KEY}&language=es-ES`
       );
-      const data = await response.json();
-      this.movie = data;
+      if (!response.ok) throw new Error('Error en la respuesta de la API');
+      this.movie = await response.json();
     } catch (error) {
-      console.error('Error loading movie details', error);
+      console.error('Error cargando detalles de la película:', error);
     }
   }
 

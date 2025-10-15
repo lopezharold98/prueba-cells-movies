@@ -1,188 +1,166 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { MoviesDataManager } from '../../data/movies-data-manager';
-
-function navigateTo(path: string) {
-  history.pushState({}, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
-}
+import { TMDB_CONFIG } from '../../config/tmdb-config.js';
+import { navigate } from '@open-cells/core'; // ✅ Navegación nativa de Open Cells
+import { ElementController } from '@open-cells/element-controller';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
-  private dataManager = new MoviesDataManager();
+  controller = new ElementController(this);
 
   @state() movies: any[] = [];
   @state() filteredMovies: any[] = [];
+  @state() query: string = '';
   @state() error: string | null = null;
-  @state() searchTerm: string = '';
 
   static styles = css`
     :host {
       display: block;
-      background: #f8f9fa;
+      background-color: #f8f9fa;
       min-height: 100vh;
       padding: 2rem;
+      color: #333;
     }
 
     h1 {
       text-align: center;
-      color: #333;
+      font-size: 2rem;
+      color: #222;
+      margin-bottom: 1.5rem;
     }
 
-    .search-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 1rem auto 2rem;
-      position: relative;
-      width: 80%;
-      max-width: 400px;
-    }
-
-    input {
+    input[type="text"] {
+      display: block;
       width: 100%;
-      padding: 0.7rem 2.5rem 0.7rem 1rem;
-      border: 1px solid #ccc;
-      border-radius: 12px;
+      max-width: 400px;
+      margin: 0 auto 2rem auto;
+      padding: 0.8rem 1rem;
       font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
       outline: none;
-      transition: box-shadow 0.2s;
+      transition: all 0.2s ease;
     }
 
-    input:focus {
+    input[type="text"]:focus {
       border-color: #0078d7;
-      box-shadow: 0 0 0 3px rgba(0, 120, 215, 0.2);
+      box-shadow: 0 0 4px rgba(0, 120, 215, 0.4);
     }
 
-    .clear-btn {
-      position: absolute;
-      right: 10px;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 1.2rem;
-      color: #666;
-    }
-
-    .movies {
+    .movies-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 1.5rem;
       justify-items: center;
     }
 
-    .movie {
-      cursor: pointer;
-      text-align: center;
+    .movie-card {
       background: #fff;
       border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
       overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
       width: 100%;
-      max-width: 220px;
+      max-width: 200px;
     }
 
-    .movie:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+    .movie-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
     }
 
-    img {
-      border-radius: 16px 16px 0 0;
+    .movie-card img {
       width: 100%;
-      height: 320px;
+      display: block;
+      height: 270px;
       object-fit: cover;
     }
 
-    h3 {
-      margin: 0.8rem 0;
-      font-size: 1.05rem;
-      color: #222;
-      padding: 0 0.5rem;
-    }
-
-    p {
-      color: #666;
-      font-size: 0.9rem;
-      margin-bottom: 0.8rem;
-    }
-
-    .error,
-    .empty {
+    .movie-card h3 {
+      margin: 0.8rem;
+      font-size: 1rem;
       text-align: center;
-      color: #555;
+      color: #333;
+    }
+
+    .no-results {
+      text-align: center;
+      color: #888;
       font-size: 1.1rem;
       margin-top: 2rem;
     }
   `;
 
-  async connectedCallback() {
+  connectedCallback() {
     super.connectedCallback();
-    await this.dataManager.loadMovies();
-    const movies = this.dataManager.get('movies');
-    this.movies = movies;
-    this.filteredMovies = movies;
-    this.error = this.dataManager.get('error');
+    this.loadMovies();
   }
 
-  handleSearch(e: Event) {
-    const value = (e.target as HTMLInputElement).value.toLowerCase();
-    this.searchTerm = value;
+  async loadMovies() {
+    try {
+      const response = await fetch(
+        `${TMDB_CONFIG.BASE_URL}/movie/popular?api_key=${TMDB_CONFIG.API_KEY}&language=es-ES&page=1`
+      );
+      if (!response.ok) throw new Error('Error al cargar las películas');
+
+      const data = await response.json();
+      this.movies = data.results;
+      this.filteredMovies = data.results;
+    } catch (err) {
+      console.error(err);
+      this.error = 'No se pudieron cargar las películas.';
+    }
+  }
+
+  handleSearch(event: InputEvent) {
+    const value = (event.target as HTMLInputElement).value.toLowerCase();
+    this.query = value;
     this.filteredMovies = this.movies.filter((movie) =>
       movie.title.toLowerCase().includes(value)
     );
   }
 
-  clearSearch() {
-    this.searchTerm = '';
-    this.filteredMovies = this.movies;
-  }
-
   goToDetail(movieId: number) {
-    navigateTo(`/movie/${movieId}`);
+    navigate('movie-detail', { id: movieId }); // ✅ Navegación Open Cells
   }
 
   render() {
     if (this.error) {
-      return html`<p class="error">${this.error}</p>`;
+      return html`<p class="no-results">${this.error}</p>`;
     }
 
     return html`
       <h1>Películas Populares</h1>
 
-      <div class="search-container">
-        <input
-          type="text"
-          placeholder="Buscar película..."
-          .value=${this.searchTerm}
-          @input=${this.handleSearch}
-        />
-        ${this.searchTerm
-          ? html`<button class="clear-btn" @click=${this.clearSearch}></button>`
-          : null}
-      </div>
+      <input
+        type="text"
+        placeholder="Buscar por título..."
+        .value=${this.query}
+        @input=${this.handleSearch}
+      />
 
       ${this.filteredMovies.length === 0
-        ? html`<p class="empty">
-            No se encontraron películas para
-            "<strong>${this.searchTerm}</strong>"
+        ? html`<p class="no-results">
+            No se encontraron películas con ese título.
           </p>`
         : html`
-            <section class="movies">
+            <div class="movies-grid">
               ${this.filteredMovies.map(
-                (m) => html`
-                  <div class="movie" @click=${() => this.goToDetail(m.id)}>
+                (movie) => html`
+                  <div
+                    class="movie-card"
+                    @click=${() => this.goToDetail(movie.id)}
+                  >
                     <img
-                      src="https://image.tmdb.org/t/p/w500${m.poster_path}"
-                      alt="${m.title}"
+                      src="https://image.tmdb.org/t/p/w300${movie.poster_path}"
+                      alt=${movie.title}
                     />
-                    <h3>${m.title}</h3>
-                    <p>${m.release_date}</p>
+                    <h3>${movie.title}</h3>
                   </div>
                 `
               )}
-            </section>
+            </div>
           `}
     `;
   }
