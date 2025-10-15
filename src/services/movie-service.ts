@@ -1,30 +1,27 @@
-import { TMDB_CONFIG } from '../config/tmdb-config.js';
+import { MoviesDataManager } from '../data/movies-data-manager.js';
 
 export class MovieService {
-  static async getPopularMovies() {
-    try {
-      const response = await fetch(
-        `${TMDB_CONFIG.BASE_URL}/movie/popular?api_key=${TMDB_CONFIG.API_KEY}&language=es-ES`
-      );
-      if (!response.ok) throw new Error('Error fetching popular movies');
-      const data = await response.json();
-      return data.results;
-    } catch (error) {
-      console.error('MovieService.getPopularMovies:', error);
-      throw error;
-    }
+  constructor() {
+    this.dataManager  = new MoviesDataManager();
   }
 
-  static async getMovieById(id: string) {
-    try {
-      const response = await fetch(
-        `${TMDB_CONFIG.BASE_URL}/movie/${id}?api_key=${TMDB_CONFIG.API_KEY}&language=es-ES`
-      );
-      if (!response.ok) throw new Error('Error fetching movie details');
-      return await response.json();
-    } catch (error) {
-      console.error('MovieService.getMovieById:', error);
-      throw error;
-    }
+  async getPopularMovies() {
+    const cached = this.dataManager.getMovies();
+    if (cached && cached.length > 0) return cached;
+
+    await this.dataManager.loadMovies();
+    return this.dataManager.getMovies();
+  }
+
+  async getMovieById(id) {
+    const cached = this.dataManager.getMovieById(id);
+    if (cached) return cached;
+
+    const movie = await this.dataManager.loadMovieById(id);
+    return movie;
+  }
+
+  getError() {
+    return this.dataManager.getError();
   }
 }

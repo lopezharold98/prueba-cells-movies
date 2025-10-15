@@ -1,17 +1,12 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement } from 'lit/decorators.js';
 import { navigate } from '@open-cells/core';
-import { ElementController } from '@open-cells/element-controller';
-import { MovieService } from '../../services/movie-service.js'; // ✅ Importamos el servicio
+import { HomeController } from '../../controllers/home-controller.js';
+import { Movie } from '../../types/movie.js';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
-  controller = new ElementController(this);
-
-  @state() movies: any[] = [];
-  @state() filteredMovies: any[] = [];
-  @state() query: string = '';
-  @state() error: string | null = null;
+  controller = new HomeController(this);
 
   static styles = css`
     :host {
@@ -29,7 +24,7 @@ export class HomePage extends LitElement {
       margin-bottom: 1.5rem;
     }
 
-    input[type="text"] {
+    input[type='text'] {
       display: block;
       width: 100%;
       max-width: 400px;
@@ -38,13 +33,6 @@ export class HomePage extends LitElement {
       font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 8px;
-      outline: none;
-      transition: all 0.2s ease;
-    }
-
-    input[type="text"]:focus {
-      border-color: #0078d7;
-      box-shadow: 0 0 4px rgba(0, 120, 215, 0.4);
     }
 
     .movies-grid {
@@ -60,7 +48,6 @@ export class HomePage extends LitElement {
       overflow: hidden;
       cursor: pointer;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
       width: 100%;
       max-width: 200px;
     }
@@ -72,56 +59,36 @@ export class HomePage extends LitElement {
 
     .movie-card img {
       width: 100%;
-      display: block;
       height: 270px;
       object-fit: cover;
-    }
-
-    .movie-card h3 {
-      margin: 0.8rem;
-      font-size: 1rem;
-      text-align: center;
-      color: #333;
     }
 
     .no-results {
       text-align: center;
       color: #888;
-      font-size: 1.1rem;
       margin-top: 2rem;
     }
   `;
 
   connectedCallback() {
     super.connectedCallback();
-    this.loadMovies();
-  }
-
-  async loadMovies() {
-    try {
-      const movies = await MovieService.getPopularMovies();
-      this.movies = movies;
-      this.filteredMovies = movies;
-    } catch (err) {
-      this.error = 'No se pudieron cargar las películas.';
-    }
+    this.controller.loadMovies();
   }
 
   handleSearch(event: InputEvent) {
-    const value = (event.target as HTMLInputElement).value.toLowerCase();
-    this.query = value;
-    this.filteredMovies = this.movies.filter((movie) =>
-      movie.title.toLowerCase().includes(value)
-    );
+    const query = (event.target as HTMLInputElement).value;
+    this.controller.searchMovies(query);
   }
 
-  goToDetail(movieId: number) {
-    navigate('movie-detail', { id: movieId });
+  goToDetail(id: number) {
+    navigate('movie-detail', { id });
   }
 
   render() {
-    if (this.error) {
-      return html`<p class="no-results">${this.error}</p>`;
+    const { filteredMovies, query, error } = this.controller;
+
+    if (error) {
+      return html`<p class="no-results">${error}</p>`;
     }
 
     return html`
@@ -130,18 +97,16 @@ export class HomePage extends LitElement {
       <input
         type="text"
         placeholder="Buscar por título..."
-        .value=${this.query}
+        .value=${query}
         @input=${this.handleSearch}
       />
 
-      ${this.filteredMovies.length === 0
-        ? html`<p class="no-results">
-            No se encontraron películas con ese título.
-          </p>`
+      ${filteredMovies.length === 0
+        ? html`<p class="no-results">No se encontraron resultados.</p>`
         : html`
             <div class="movies-grid">
-              ${this.filteredMovies.map(
-                (movie) => html`
+              ${filteredMovies.map(
+                (movie : Movie) => html`
                   <div
                     class="movie-card"
                     @click=${() => this.goToDetail(movie.id)}
