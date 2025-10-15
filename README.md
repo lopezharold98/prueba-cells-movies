@@ -6,9 +6,8 @@
 
 ## Instalación
 1. Copia el repo
-2. Crea `.env` con:
-   VITE_TMDB_API_KEY=TU_API_KEY_TMDB
-3. Instala:
+
+2. Instala:
    npm install
 
 ## Desarrollo

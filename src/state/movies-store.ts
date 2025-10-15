@@ -9,7 +9,7 @@ class MoviesStore extends EventTarget {
   movieDetail: Movie | null = null;
   filter = '';
 
-  private TMDB_KEY = (import.meta as any).env?.VITE_TMDB_API_KEY as string;
+  private TMDB_KEY = (import.meta as any).env?.TMDB_API_KEY as string;
   private BASE = 'https://api.themoviedb.org/3';
 
   async fetchPopular() {
