@@ -1,8 +1,8 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { TMDB_CONFIG } from '../../config/tmdb-config.js';
-import { navigate } from '@open-cells/core'; // ✅ Navegación nativa de Open Cells
+import { navigate } from '@open-cells/core';
 import { ElementController } from '@open-cells/element-controller';
+import { MovieService } from '../../services/movie-service.js'; // ✅ Importamos el servicio
 
 @customElement('home-page')
 export class HomePage extends LitElement {
@@ -99,16 +99,10 @@ export class HomePage extends LitElement {
 
   async loadMovies() {
     try {
-      const response = await fetch(
-        `${TMDB_CONFIG.BASE_URL}/movie/popular?api_key=${TMDB_CONFIG.API_KEY}&language=es-ES&page=1`
-      );
-      if (!response.ok) throw new Error('Error al cargar las películas');
-
-      const data = await response.json();
-      this.movies = data.results;
-      this.filteredMovies = data.results;
+      const movies = await MovieService.getPopularMovies();
+      this.movies = movies;
+      this.filteredMovies = movies;
     } catch (err) {
-      console.error(err);
       this.error = 'No se pudieron cargar las películas.';
     }
   }
@@ -122,7 +116,7 @@ export class HomePage extends LitElement {
   }
 
   goToDetail(movieId: number) {
-    navigate('movie-detail', { id: movieId }); // ✅ Navegación Open Cells
+    navigate('movie-detail', { id: movieId });
   }
 
   render() {
