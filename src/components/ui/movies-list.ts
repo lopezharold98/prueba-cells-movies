@@ -1,4 +1,3 @@
-// src/components/ui/movies-list.ts
 import { LitElement, html, css } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import type { Movie } from '../../types/movie';
