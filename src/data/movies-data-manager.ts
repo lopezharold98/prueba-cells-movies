@@ -1,4 +1,3 @@
-// Fallback minimal DataManager when '@open-cells/core/data-manager' is not available.
 class DataManager {
   private state = new Map<string, any>();
 

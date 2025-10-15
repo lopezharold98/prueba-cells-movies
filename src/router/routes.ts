@@ -10,8 +10,8 @@ export const routes: RouteDefinition[] = [
     },
   },
   {
-    path: '/detail/:id',
-    name: 'detail',
+    path: '/movie/:id',
+    name: 'movie-detail',
     component: 'detail-page',
     action: async () => {
       await import('../pages/detail/detail-page.js');
