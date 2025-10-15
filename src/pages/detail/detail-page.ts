@@ -1,83 +1,83 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
+import { getRouterParams } from '@open-cells/core/router';
 import { TMDB_CONFIG } from '../../config/tmdb-config.js';
-const Router = {
-  getCurrentParams() {
-    const params: any = {};
-    try {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has('id')) {
-        params.id = url.searchParams.get('id') || '';
-      } else {
-        const segments = url.pathname.split('/').filter(Boolean);
-        params.id = segments.length ? segments[segments.length - 1] : '';
-      }
-    } catch (e) {
-      params.id = '';
-    }
-    return params;
-  }
-};
-
 
 @customElement('detail-page')
 export class DetailPage extends LitElement {
-  @property({ type: String }) id = '';
   @state() movie: any = null;
-  @state() error: string | null = null;
 
   static styles = css`
-    .container {
+    :host {
+      display: block;
       padding: 2rem;
+      background: #f5f6fa;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    .container {
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
     }
+
     img {
       width: 300px;
       border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      margin-bottom: 1.5rem;
     }
-    h1 {
-      margin-top: 1rem;
+
+    h2 {
+      margin: 0.5rem 0;
     }
+
     p {
       max-width: 600px;
+      line-height: 1.5;
+    }
+
+    .genres {
       color: #555;
+      margin-top: 0.5rem;
     }
   `;
 
   async connectedCallback() {
     super.connectedCallback();
-    const params = Router.getCurrentParams();
-    this.id = params.id;
-    await this.loadMovieDetail();
-  }
+    const params = getRouterParams();
+    const id = params.id;
 
-  async loadMovieDetail() {
     try {
-      const res = await fetch(
-        `${TMDB_CONFIG.BASE_URL}/movie/${this.id}?api_key=${TMDB_CONFIG.API_KEY}&language=es-ES`
+      const response = await fetch(
+        `${TMDB_CONFIG.BASE_URL}/movie/${id}?api_key=${TMDB_CONFIG.API_KEY}&language=es-ES`
       );
-      if (!res.ok) throw new Error('Error al cargar detalles');
-      this.movie = await res.json();
-    } catch (err) {
-      console.error(err);
-      this.error = 'No se pudo cargar el detalle de la película.';
+      const data = await response.json();
+      this.movie = data;
+    } catch (error) {
+      console.error('Error loading movie details', error);
     }
   }
 
   render() {
-    if (this.error) return html`<p>${this.error}</p>`;
-    if (!this.movie) return html`<p>Cargando...</p>`;
+    if (!this.movie) {
+      return html`<p>Cargando detalles...</p>`;
+    }
 
     return html`
       <div class="container">
-        <img src="https://image.tmdb.org/t/p/w500${this.movie.poster_path}" alt="${this.movie.title}" />
-        <h1>${this.movie.title}</h1>
+        <img
+          src="https://image.tmdb.org/t/p/w500${this.movie.poster_path}"
+          alt="${this.movie.title}"
+        />
+        <h2>${this.movie.title}</h2>
         <p>${this.movie.overview}</p>
-        <p><strong>Fecha de lanzamiento:</strong> ${this.movie.release_date}</p>
-        <p><strong>Calificación:</strong> ⭐ ${this.movie.vote_average}</p>
+        <p>⭐ ${this.movie.vote_average} / 10</p>
+        <p class="genres">
+          ${this.movie.genres?.map((g: any) => g.name).join(', ')}
+        </p>
       </div>
     `;
   }
